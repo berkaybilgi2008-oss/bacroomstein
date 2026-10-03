@@ -15,7 +15,9 @@ public class ColaWeaponController : MonoBehaviour
 
     [Header("Pickup")]
     [SerializeField] private bool spawnPickupNearPlayerAtStart = true;
-    [SerializeField, Min(1f)] private float pickupSpawnDistance = 2.5f;
+    [SerializeField, Min(0f)] private float pickupSpawnDistance = 2.5f;
+    [SerializeField] private float pickupSpriteHeight = 0.65f;
+    [SerializeField, Min(0.001f)] private float pickupSpriteScale = 0.012f;
 
     [Header("Held sprite placement")]
     [SerializeField] private Vector3 heldSpriteLocalPosition = new Vector3(0.42f, -0.38f, 1.2f);
@@ -168,7 +170,7 @@ public class ColaWeaponController : MonoBehaviour
         pickupObject = new GameObject("Cola Pickup (auto-spawned)");
         pickupObject.transform.position = spawnPosition;
         ColaPickup pickup = pickupObject.AddComponent<ColaPickup>();
-        pickup.Configure(this, playerCamera, Resources.Load<Texture2D>("Weapons/Cola/yerde"));
+        pickup.Configure(this, playerCamera, Resources.Load<Texture2D>("Weapons/Cola/yerde"), pickupSpriteHeight, pickupSpriteScale);
     }
 
     private void SetIdleSprite()
