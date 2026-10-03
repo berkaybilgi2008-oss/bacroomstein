@@ -15,9 +15,7 @@ public class ColaWeaponController : MonoBehaviour
 
     [Header("Pickup")]
     [SerializeField] private bool spawnPickupNearPlayerAtStart = true;
-    [SerializeField] private Vector3 pickupWorldPosition = new Vector3(0f, 0f, 0f);
-    [SerializeField] private float pickupSpriteHeight = 0.65f;
-    [SerializeField, Min(0.001f)] private float pickupSpriteScale = 0.012f;
+    [SerializeField, Min(1f)] private float pickupSpawnDistance = 2.5f;
 
     [Header("Held sprite placement")]
     [SerializeField] private Vector3 heldSpriteLocalPosition = new Vector3(0.42f, -0.38f, 1.2f);
@@ -159,11 +157,18 @@ public class ColaWeaponController : MonoBehaviour
 
     private void SpawnPickup()
     {
-        // The pickup is created at a fixed world position, never parented to the player.
+        Vector3 flatForward = transform.forward;
+        flatForward.y = 0f;
+        if (flatForward.sqrMagnitude < 0.001f) flatForward = Vector3.forward;
+        flatForward.Normalize();
+
+        Vector3 spawnPosition = transform.position + flatForward * pickupSpawnDistance;
+        spawnPosition.y = transform.position.y;
+
         pickupObject = new GameObject("Cola Pickup (auto-spawned)");
-        pickupObject.transform.position = pickupWorldPosition;
+        pickupObject.transform.position = spawnPosition;
         ColaPickup pickup = pickupObject.AddComponent<ColaPickup>();
-        pickup.Configure(this, playerCamera, Resources.Load<Texture2D>("Weapons/Cola/yerde"), pickupSpriteHeight, pickupSpriteScale);
+        pickup.Configure(this, playerCamera, Resources.Load<Texture2D>("Weapons/Cola/yerde"));
     }
 
     private void SetIdleSprite()
