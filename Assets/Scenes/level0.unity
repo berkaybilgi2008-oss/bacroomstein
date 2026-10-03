@@ -5737,6 +5737,7 @@ GameObject:
   - component: {fileID: 2100000001}
   - component: {fileID: 2100000002}
   - component: {fileID: 2100000003}
+  - component: {fileID: 2100000004}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -5806,6 +5807,26 @@ MonoBehaviour:
   playerCamera: {fileID: 961739753}
   mouseSensitivity: 0.08
   maxLookAngle: 85
+--- !u!114 &2100000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2100000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7f1c7a45e2040f4a6d8b19c3e7f205a, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  playerCamera: {fileID: 961739753}
+  meleeRange: 2.1
+  meleeDamage: 35
+  meleeCooldown: 0.48
+  sodaRange: 9
+  sodaDamage: 22
+  sodaCooldown: 0.7
+  switchDuration: 0.32
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
