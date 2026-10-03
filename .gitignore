@@ -1,0 +1,47 @@
+
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+
+# IDE dosyalari
+.vs/
+.idea/
+.vscode/
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svclog
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity otomatik olusturulan dosyalar
+sysinfo.txt
+*.stackdump
+MemoryCaptures/
+Recordings/
+
+# Isletim sistemi dosyalari
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Crash raporlari
+crashlytics-build.properties
+
+# Build ciktisi
+*.apk
+*.aab
+*.unitypackage
+*.app
+*.exe
+*.dll
