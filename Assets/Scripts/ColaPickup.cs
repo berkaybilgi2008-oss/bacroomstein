@@ -9,15 +9,15 @@ public class ColaPickup : MonoBehaviour
     private Camera targetCamera;
     private SpriteRenderer spriteRenderer;
 
-    public void Configure(ColaWeaponController controller, Camera cameraToFace, Texture2D pickupTexture)
+    public void Configure(ColaWeaponController controller, Camera cameraToFace, Texture2D pickupTexture, float spriteHeight = 0.65f, float spriteScale = 0.012f)
     {
         owner = controller;
         targetCamera = cameraToFace;
 
         GameObject visual = new GameObject("Pickup Sprite");
         visual.transform.SetParent(transform, false);
-        visual.transform.localPosition = new Vector3(0f, 0.65f, 0f);
-        visual.transform.localScale = Vector3.one * 0.012f;
+        visual.transform.localPosition = new Vector3(0f, spriteHeight, 0f);
+        visual.transform.localScale = Vector3.one * spriteScale;
         spriteRenderer = visual.AddComponent<SpriteRenderer>();
         spriteRenderer.sortingOrder = 10;
 
