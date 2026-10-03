@@ -36,15 +36,10 @@ internal static class ColaWeaponScenePreview
         if (cam == null) cam = controller.GetComponentInChildren<Camera>();
         if (cam == null) return;
 
-        float distance = so.FindProperty("pickupSpawnDistance").floatValue;
+        Vector3 pickupWorldPosition = so.FindProperty("pickupWorldPosition").vector3Value;
         float height = so.FindProperty("pickupSpriteHeight").floatValue;
         float scale = so.FindProperty("pickupSpriteScale").floatValue;
-        Vector3 forward = controller.transform.forward;
-        forward.y = 0f;
-        if (forward.sqrMagnitude < 0.001f) forward = Vector3.forward;
-        forward.Normalize();
-        Vector3 pos = controller.transform.position + forward * distance;
-        pos.y = controller.transform.position.y;
+        Vector3 pos = pickupWorldPosition;
 
         Texture2D pickupTexture = Resources.Load<Texture2D>("Weapons/Cola/yerde");
         if (pickupTexture != null)
