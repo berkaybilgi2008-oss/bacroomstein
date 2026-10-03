@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(CharacterController))]
 public class FPSController : MonoBehaviour
@@ -10,7 +11,7 @@ public class FPSController : MonoBehaviour
 
     [Header("Look")]
     [SerializeField] private Transform playerCamera;
-    [SerializeField] private float mouseSensitivity = 2f;
+    [SerializeField] private float mouseSensitivity = 0.08f;
     [SerializeField] private float maxLookAngle = 85f;
 
     private CharacterController controller;
@@ -43,14 +44,17 @@ public class FPSController : MonoBehaviour
 
     private void HandleCursor()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (Keyboard.current == null || Mouse.current == null)
+            return;
+
+        if (Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
 
         if (Cursor.lockState != CursorLockMode.Locked &&
-            Input.GetMouseButtonDown(0))
+            Mouse.current.leftButton.wasPressedThisFrame)
         {
             LockCursor();
         }
@@ -64,16 +68,17 @@ public class FPSController : MonoBehaviour
 
     private void Look()
     {
-        if (playerCamera == null || Cursor.lockState != CursorLockMode.Locked)
+        if (playerCamera == null ||
+            Cursor.lockState != CursorLockMode.Locked ||
+            Mouse.current == null)
             return;
 
-        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
+        Vector2 mouseDelta = Mouse.current.delta.ReadValue() * mouseSensitivity;
 
-        transform.Rotate(Vector3.up * mouseX);
+        transform.Rotate(Vector3.up * mouseDelta.x);
 
         cameraPitch = Mathf.Clamp(
-            cameraPitch - mouseY,
+            cameraPitch - mouseDelta.y,
             -maxLookAngle,
             maxLookAngle);
 
@@ -82,8 +87,16 @@ public class FPSController : MonoBehaviour
 
     private void Move()
     {
-        float inputX = Input.GetAxisRaw("Horizontal");
-        float inputZ = Input.GetAxisRaw("Vertical");
+        if (Keyboard.current == null)
+            return;
+
+        float inputX = 0f;
+        float inputZ = 0f;
+
+        if (Keyboard.current.aKey.isPressed) inputX -= 1f;
+        if (Keyboard.current.dKey.isPressed) inputX += 1f;
+        if (Keyboard.current.sKey.isPressed) inputZ -= 1f;
+        if (Keyboard.current.wKey.isPressed) inputZ += 1f;
 
         Vector3 move = transform.right * inputX + transform.forward * inputZ;
         move = Vector3.ClampMagnitude(move, 1f);
@@ -93,7 +106,7 @@ public class FPSController : MonoBehaviour
             if (verticalVelocity < 0f)
                 verticalVelocity = -2f;
 
-            if (Input.GetKeyDown(KeyCode.Space))
+            if (Keyboard.current.spaceKey.wasPressedThisFrame)
                 verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
         }
 
