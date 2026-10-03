@@ -3,8 +3,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// Cola weapon gameplay only. Intentionally creates no placeholder art; the player can add their own sprites.
-/// Q switches between club and soda-burst modes. Left click attacks once per press.
+/// Handles the pickup, the two cola modes, sprite animation and the existing prototype hit checks.
+/// Sprite PNGs are loaded from Assets/Resources/Weapons/Cola/ at runtime.
 /// </summary>
 public class ColaWeaponController : MonoBehaviour
 {
@@ -13,31 +13,60 @@ public class ColaWeaponController : MonoBehaviour
     [Header("References")]
     [SerializeField] private Camera playerCamera;
 
+    [Header("Pickup")]
+    [SerializeField] private bool spawnPickupNearPlayerAtStart = true;
+    [SerializeField, Min(1f)] private float pickupSpawnDistance = 2.5f;
+
+    [Header("Held sprite placement")]
+    [SerializeField] private Vector3 heldSpriteLocalPosition = new Vector3(0.42f, -0.38f, 1.2f);
+    [SerializeField, Min(0.001f)] private float heldSpriteScale = 0.05f;
+
     [Header("Club")]
     [SerializeField] private float meleeRange = 2.1f;
     [SerializeField] private float meleeDamage = 35f;
     [SerializeField] private float meleeCooldown = 0.48f;
+    [SerializeField, Min(0.01f)] private float clubFrameDuration = 0.10f;
 
     [Header("Soda burst")]
     [SerializeField] private float sodaRange = 9f;
     [SerializeField] private float sodaDamage = 22f;
     [SerializeField] private float sodaCooldown = 0.7f;
-
-    [Header("Feedback")]
-    [SerializeField] private float feedbackDuration = 0.14f;
+    [SerializeField, Min(0.01f)] private float sodaAttackDuration = 0.14f;
 
     private BottleMode mode = BottleMode.Club;
+    private bool hasCola;
     private float nextAttackTime;
     private float feedbackUntil;
     private float hitUntil;
     private bool lastAttackHit;
-    private string statusMessage = "CLUB";
-    private Coroutine feedbackRoutine;
+    private string statusMessage = "FIND THE COLA";
+    private SpriteRenderer heldRenderer;
+    private Coroutine animationRoutine;
+    private Texture2D clubIdleTexture;
+    private Texture2D clubUpTexture;
+    private Texture2D clubDownTexture;
+    private Texture2D sodaIdleTexture;
+    private Texture2D sodaFireTexture;
+    private Sprite clubIdleSprite;
+    private Sprite clubUpSprite;
+    private Sprite clubDownSprite;
+    private Sprite sodaIdleSprite;
+    private Sprite sodaFireSprite;
+    private GameObject pickupObject;
 
     private void Awake()
     {
         if (playerCamera == null)
             playerCamera = GetComponentInChildren<Camera>();
+
+        LoadTextures();
+        CreateHeldVisual();
+    }
+
+    private void Start()
+    {
+        if (spawnPickupNearPlayerAtStart && !hasCola)
+            SpawnPickup();
     }
 
     private void Update()
@@ -45,31 +74,145 @@ public class ColaWeaponController : MonoBehaviour
         if (Keyboard.current == null || Mouse.current == null)
             return;
 
-        if (Keyboard.current.qKey.wasPressedThisFrame)
-        {
-            mode = mode == BottleMode.Club ? BottleMode.Soda : BottleMode.Club;
-            statusMessage = mode == BottleMode.Club ? "CLUB MODE" : "SODA BURST MODE";
-            feedbackUntil = Time.unscaledTime + 0.65f;
-            Debug.Log("Cola weapon mode: " + mode);
-        }
+        if (Keyboard.current.digit1Key.wasPressedThisFrame)
+            SetMode(BottleMode.Club);
+        else if (Keyboard.current.digit2Key.wasPressedThisFrame)
+            SetMode(BottleMode.Soda);
 
-        if (Cursor.lockState != CursorLockMode.Locked ||
-            !Mouse.current.leftButton.wasPressedThisFrame ||
-            Time.time < nextAttackTime)
+        if (!hasCola || Cursor.lockState != CursorLockMode.Locked ||
+            !Mouse.current.leftButton.wasPressedThisFrame || Time.time < nextAttackTime)
             return;
 
         if (mode == BottleMode.Club)
-            Attack(meleeRange, meleeDamage, meleeCooldown, "SWING");
+        {
+            nextAttackTime = Time.time + meleeCooldown;
+            PlayClubAttack();
+            Attack(meleeRange, meleeDamage, "SWING");
+        }
         else
-            Attack(sodaRange, sodaDamage, sodaCooldown, "SODA BURST");
+        {
+            nextAttackTime = Time.time + sodaCooldown;
+            PlaySodaAttack();
+            Attack(sodaRange, sodaDamage, "SODA BURST");
+        }
     }
 
-    private void Attack(float range, float damage, float cooldown, string attackName)
+    private void LoadTextures()
     {
-        nextAttackTime = Time.time + cooldown;
-        feedbackUntil = Time.unscaledTime + feedbackDuration;
+        clubIdleTexture = Resources.Load<Texture2D>("Weapons/Cola/dik");
+        clubUpTexture = Resources.Load<Texture2D>("Weapons/Cola/kalkik");
+        clubDownTexture = Resources.Load<Texture2D>("Weapons/Cola/inik");
+        sodaIdleTexture = Resources.Load<Texture2D>("Weapons/Cola/elde");
+        sodaFireTexture = Resources.Load<Texture2D>("Weapons/Cola/ates");
+    }
+
+    private Sprite ToSprite(Texture2D texture)
+    {
+        if (texture == null) return null;
+        return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height),
+            new Vector2(0.5f, 0.5f), 100f);
+    }
+
+    private void CreateHeldVisual()
+    {
+        if (playerCamera == null) return;
+
+        GameObject visual = new GameObject("Held Cola Sprite");
+        visual.transform.SetParent(playerCamera.transform, false);
+        visual.transform.localPosition = heldSpriteLocalPosition;
+        visual.transform.localRotation = Quaternion.identity;
+        visual.transform.localScale = Vector3.one * heldSpriteScale;
+
+        heldRenderer = visual.AddComponent<SpriteRenderer>();
+        heldRenderer.sortingOrder = 100;
+        clubIdleSprite = ToSprite(clubIdleTexture);
+        clubUpSprite = ToSprite(clubUpTexture);
+        clubDownSprite = ToSprite(clubDownTexture);
+        sodaIdleSprite = ToSprite(sodaIdleTexture);
+        sodaFireSprite = ToSprite(sodaFireTexture);
+        heldRenderer.sprite = null;
+        heldRenderer.enabled = false;
+    }
+
+    private void SetMode(BottleMode requestedMode)
+    {
+        if (requestedMode == mode) return;
+        mode = requestedMode;
+        if (hasCola) SetIdleSprite();
+        statusMessage = mode == BottleMode.Club ? "CLUB MODE" : "SODA MODE";
+        feedbackUntil = Time.unscaledTime + 0.5f;
+    }
+
+    public void CollectCola()
+    {
+        if (hasCola) return;
+        hasCola = true;
+        if (pickupObject != null) Destroy(pickupObject);
+        if (heldRenderer != null) heldRenderer.enabled = true;
+        SetIdleSprite();
+        statusMessage = "COLA PICKED UP";
+        feedbackUntil = Time.unscaledTime + 1f;
+        Debug.Log("Cola picked up. Press 1 for club, 2 for soda.");
+    }
+
+    private void SpawnPickup()
+    {
+        Vector3 flatForward = transform.forward;
+        flatForward.y = 0f;
+        if (flatForward.sqrMagnitude < 0.001f) flatForward = Vector3.forward;
+        flatForward.Normalize();
+
+        Vector3 spawnPosition = transform.position + flatForward * pickupSpawnDistance;
+        spawnPosition.y = transform.position.y;
+
+        pickupObject = new GameObject("Cola Pickup (auto-spawned)");
+        pickupObject.transform.position = spawnPosition;
+        ColaPickup pickup = pickupObject.AddComponent<ColaPickup>();
+        pickup.Configure(this, playerCamera, Resources.Load<Texture2D>("Weapons/Cola/yerde"));
+    }
+
+    private void SetIdleSprite()
+    {
+        if (heldRenderer == null) return;
+        heldRenderer.sprite = mode == BottleMode.Club ? clubIdleSprite : sodaIdleSprite;
+        heldRenderer.enabled = hasCola;
+    }
+
+    private void PlayClubAttack()
+    {
+        if (animationRoutine != null) StopCoroutine(animationRoutine);
+        animationRoutine = StartCoroutine(ClubAnimation());
+    }
+
+    private IEnumerator ClubAnimation()
+    {
+        if (heldRenderer != null) heldRenderer.sprite = clubUpSprite;
+        yield return new WaitForSeconds(clubFrameDuration);
+        if (heldRenderer != null) heldRenderer.sprite = clubDownSprite;
+        yield return new WaitForSeconds(clubFrameDuration);
+        if (mode == BottleMode.Club) SetIdleSprite();
+        animationRoutine = null;
+    }
+
+    private void PlaySodaAttack()
+    {
+        if (animationRoutine != null) StopCoroutine(animationRoutine);
+        animationRoutine = StartCoroutine(SodaAnimation());
+    }
+
+    private IEnumerator SodaAnimation()
+    {
+        if (heldRenderer != null) heldRenderer.sprite = sodaFireSprite;
+        yield return new WaitForSeconds(sodaAttackDuration);
+        if (mode == BottleMode.Soda) SetIdleSprite();
+        animationRoutine = null;
+    }
+
+    private void Attack(float range, float damage, string attackName)
+    {
         lastAttackHit = false;
         statusMessage = attackName;
+        feedbackUntil = Time.unscaledTime + 0.18f;
 
         if (playerCamera != null)
         {
@@ -80,7 +223,6 @@ public class ColaWeaponController : MonoBehaviour
 
             foreach (RaycastHit hit in hits)
             {
-                // Ignore the player's own colliders and continue looking for the first real target.
                 if (hit.transform == transform || hit.transform.IsChildOf(transform))
                     continue;
 
@@ -91,27 +233,12 @@ public class ColaWeaponController : MonoBehaviour
                     statusMessage = attackName + " - HIT!";
                 }
                 else
-                {
                     statusMessage = attackName + " - NO TARGET";
-                }
                 break;
             }
         }
 
-        if (feedbackRoutine != null)
-            StopCoroutine(feedbackRoutine);
-        feedbackRoutine = StartCoroutine(AttackFeedback());
-
         Debug.Log("Cola " + attackName + (lastAttackHit ? ": HIT" : ": MISS / no damage receiver"));
-    }
-
-    private IEnumerator AttackFeedback()
-    {
-        // A small UI pulse confirms every click, even before the weapon sprites are added.
-        float end = Time.unscaledTime + feedbackDuration;
-        while (Time.unscaledTime < end)
-            yield return null;
-        feedbackRoutine = null;
     }
 
     private static bool ApplyDamage(Collider target, float amount)
@@ -149,10 +276,10 @@ public class ColaWeaponController : MonoBehaviour
 
         GUI.color = Color.white;
         GUI.Label(new Rect(18f, Screen.height - 48f, 500f, 24f),
-            mode == BottleMode.Club
-                ? "COLA: CLUB  |  Q: SWITCH  |  LMB: SWING"
-                : "COLA: SODA BURST  |  Q: SWITCH  |  LMB: FIRE");
-        if (Time.unscaledTime < feedbackUntil)
+            !hasCola ? "COLA: NOT FOUND" :
+            mode == BottleMode.Club ? "COLA: CLUB  |  1: CLUB  |  2: SODA  |  LMB: SWING"
+            : "COLA: SODA  |  1: CLUB  |  2: SODA  |  LMB: FIRE");
+        if (hasCola && Time.unscaledTime < feedbackUntil)
             GUI.Label(new Rect(cx + 18f, cy + 12f, 260f, 24f), statusMessage);
         GUI.color = Color.white;
     }
