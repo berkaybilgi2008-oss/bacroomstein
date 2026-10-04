@@ -9,11 +9,17 @@ public class WeaponHolder : MonoBehaviour
     [SerializeField] private Transform weaponSocket;
     [Header("Weapon visuals: Element 0 = Cola, Element 1 = Upright Cola")]
     [SerializeField] private GameObject[] weaponVisuals;
-    [Header("Basic firing")]
-    [SerializeField] private Camera playerCamera;
-    [SerializeField] private float fireRate = 0.25f;
-    [SerializeField] private float range = 60f;
+    [Header("Ranged weapon settings")]
+    [Min(0f)] [SerializeField] private float rangedDamage = 15f;
+    [Min(0.01f)] [SerializeField] private float fireRate = 0.25f;
+    [Min(0.1f)] [SerializeField] private float range = 60f;
     [SerializeField] private float impactForce = 8f;
+    [Header("Upright Cola melee settings")]
+    [Min(0f)] [SerializeField] private float meleeDamage = 40f;
+    [Min(0.1f)] [SerializeField] private float meleeReach = 1.6f;
+    [Min(0.1f)] [SerializeField] private float meleeRadius = 0.75f;
+    [Header("Collision")]
+    [SerializeField] private LayerMask hitMask = ~0;
 
     private bool[] ownedWeapons;
     private int equippedIndex = -1;
@@ -22,9 +28,6 @@ public class WeaponHolder : MonoBehaviour
 
     private void Awake()
     {
-        if (playerCamera == null) playerCamera = GetComponentInParent<Camera>();
-        if (playerCamera == null) playerCamera = GetComponentInChildren<Camera>();
-        if (playerCamera == null) playerCamera = Camera.main;
         if (weaponSocket == null) weaponSocket = transform;
         ownedWeapons = new bool[weaponVisuals == null ? 0 : weaponVisuals.Length];
         if (weaponVisuals == null) return;
@@ -60,45 +63,52 @@ public class WeaponHolder : MonoBehaviour
 
     private void Update()
     {
-        // 1 = upright Cola (Element 1), 2 = normal Cola (Element 0).
         if (WeaponKeyPressed(1)) EquipWeapon(1);
         else if (WeaponKeyPressed(2)) EquipWeapon(0);
-
-        if (equippedIndex < 0 || playerCamera == null || !FirePressed() || Time.time < nextFireTime) return;
-        nextFireTime = Time.time + fireRate;
-
-        // Play the equipped weapon's own sprite animation once per shot.
-        if (equippedIndex >= 0 && weaponVisuals != null && equippedIndex < weaponVisuals.Length && weaponVisuals[equippedIndex] != null)
+        if (equippedIndex < 0 || !FirePressed() || Time.time < nextFireTime) return;
+        nextFireTime = Time.time + Mathf.Max(0.01f, fireRate);
+        if (weaponVisuals != null && equippedIndex < weaponVisuals.Length && weaponVisuals[equippedIndex] != null)
         {
-            ColaWeaponAnimation weaponAnimation = weaponVisuals[equippedIndex].GetComponentInChildren<ColaWeaponAnimation>();
-            if (weaponAnimation != null) weaponAnimation.PlayFireAnimation();
+            ColaWeaponAnimation anim = weaponVisuals[equippedIndex].GetComponentInChildren<ColaWeaponAnimation>();
+            if (anim != null) anim.PlayFireAnimation();
         }
+        Camera cam = GetPlayerCamera();
+        if (cam == null) return;
+        if (equippedIndex == 1) Swing(cam);
+        else Shoot(cam);
+    }
 
-        Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
+    private Camera GetPlayerCamera()
+    {
+        Camera c = GetComponentInChildren<Camera>();
+        if (c == null) c = GetComponentInParent<Camera>();
+        if (c == null) c = Camera.main;
+        return c;
+    }
 
-        if (equippedIndex == 1)
+    private void Shoot(Camera cam)
+    {
+        Ray ray = new Ray(cam.transform.position, cam.transform.forward);
+        if (!Physics.Raycast(ray, out RaycastHit hit, range, hitMask, QueryTriggerInteraction.Ignore)) return;
+        Health health = hit.collider.GetComponentInParent<Health>();
+        if (health != null && health.transform.root != transform.root) health.TakeDamage(rangedDamage);
+        Rigidbody body = hit.rigidbody;
+        if (body != null && !body.isKinematic && body.transform.root != transform.root)
+            body.AddForceAtPosition(ray.direction * impactForce, hit.point, ForceMode.Impulse);
+    }
+
+    private void Swing(Camera cam)
+    {
+        Vector3 center = cam.transform.position + cam.transform.forward * meleeReach;
+        Collider[] targets = Physics.OverlapSphere(center, meleeRadius, hitMask, QueryTriggerInteraction.Ignore);
+        foreach (Collider target in targets)
         {
-            // Upright Cola is a short-range swing: affect nearby physics targets only.
-            const float swingReach = 1.6f;
-            const float swingRadius = 0.75f;
-            Vector3 swingCenter = playerCamera.transform.position + playerCamera.transform.forward * swingReach;
-            Collider[] targets = Physics.OverlapSphere(swingCenter, swingRadius, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-            foreach (Collider target in targets)
-            {
-                if (target.transform.root == transform.root) continue;
-                Rigidbody targetBody = target.attachedRigidbody;
-                if (targetBody != null && !targetBody.isKinematic)
-                {
-                    Vector3 pushDirection = (targetBody.worldCenterOfMass - playerCamera.transform.position).normalized;
-                    targetBody.AddForce(pushDirection * impactForce, ForceMode.Impulse);
-                }
-            }
-        }
-        else if (Physics.Raycast(ray, out RaycastHit hit, range, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
-        {
-            Rigidbody hitBody = hit.rigidbody;
-            if (hitBody != null && !hitBody.isKinematic)
-                hitBody.AddForceAtPosition(ray.direction * impactForce, hit.point, ForceMode.Impulse);
+            if (target.transform.root == transform.root) continue;
+            Health health = target.GetComponentInParent<Health>();
+            if (health != null) health.TakeDamage(meleeDamage);
+            Rigidbody body = target.attachedRigidbody;
+            if (body != null && !body.isKinematic)
+                body.AddForce((body.worldCenterOfMass - cam.transform.position).normalized * impactForce, ForceMode.Impulse);
         }
     }
 
@@ -106,17 +116,13 @@ public class WeaponHolder : MonoBehaviour
     {
         bool pressed = false;
 #if ENABLE_LEGACY_INPUT_MANAGER
-        pressed = number == 1
-            ? Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1)
-            : Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2);
+        pressed = number == 1 ? Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1) : Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2);
 #endif
 #if ENABLE_INPUT_SYSTEM
         if (Keyboard.current != null)
         {
-            if (number == 1)
-                pressed |= Keyboard.current.digit1Key.wasPressedThisFrame || Keyboard.current.numpad1Key.wasPressedThisFrame;
-            else
-                pressed |= Keyboard.current.digit2Key.wasPressedThisFrame || Keyboard.current.numpad2Key.wasPressedThisFrame;
+            if (number == 1) pressed |= Keyboard.current.digit1Key.wasPressedThisFrame || Keyboard.current.numpad1Key.wasPressedThisFrame;
+            else pressed |= Keyboard.current.digit2Key.wasPressedThisFrame || Keyboard.current.numpad2Key.wasPressedThisFrame;
         }
 #endif
         return pressed;
@@ -139,9 +145,7 @@ public class WeaponHolder : MonoBehaviour
         if (!Application.isPlaying || equippedIndex < 0) return;
         if (crosshairStyle == null)
         {
-            crosshairStyle = new GUIStyle(GUI.skin.label);
-            crosshairStyle.alignment = TextAnchor.MiddleCenter;
-            crosshairStyle.fontSize = 22;
+            crosshairStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 22 };
             crosshairStyle.normal.textColor = Color.white;
         }
         GUI.Label(new Rect(Screen.width * 0.5f - 12f, Screen.height * 0.5f - 12f, 24f, 24f), "+", crosshairStyle);
