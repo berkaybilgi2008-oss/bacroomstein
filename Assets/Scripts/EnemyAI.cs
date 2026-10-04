@@ -6,15 +6,19 @@ public class EnemyAI : MonoBehaviour
     [Header("Target")]
     [SerializeField] private Transform player;
     [SerializeField] private Transform eyePoint;
-    [Header("2.5D Sprite")]
+
+    [Header("2.5D Visual")]
+    [Tooltip("The child object containing the SpriteRenderer / EnemySpriteAnimation.")]
     [SerializeField] private Transform spriteRoot;
-    [Tooltip("Yaw offset if the front of your sprite does not face local +Z.")]
-    [SerializeField] private float spriteYawOffset;
+    [Tooltip("Use 0 if the sprite's front faces local +Z. Adjust only if the art faces another direction.")]
+    [SerializeField] private float spriteYawOffset = 0f;
+
     [Header("Detection and movement")]
     [Min(0.1f)] [SerializeField] private float detectionRange = 25f;
     [Min(0f)] [SerializeField] private float moveSpeed = 3.5f;
     [Min(0.1f)] [SerializeField] private float stopDistance = 8f;
     [Min(0f)] [SerializeField] private float gravity = 20f;
+
     [Header("Shooting")]
     [Min(0f)] [SerializeField] private float damage = 10f;
     [Min(0.05f)] [SerializeField] private float shotsPerSecond = 1f;
@@ -31,60 +35,69 @@ public class EnemyAI : MonoBehaviour
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
-        if (spriteAnimation == null) spriteAnimation = GetComponentInChildren<EnemySpriteAnimation>();
+
+        if (spriteRoot == null && transform.childCount > 0)
+            spriteRoot = transform.GetChild(0);
+
+        if (spriteAnimation == null)
+            spriteAnimation = GetComponentInChildren<EnemySpriteAnimation>();
+
         FindPlayer();
-        UpdateAnimation(false, false);
+        UpdateAnimation(false);
     }
 
     private void Update()
     {
-        if (player == null) FindPlayer();
         if (player == null)
-        {
-            ApplyGravity(Vector3.zero);
-            UpdateAnimation(false, false);
-            return;
-        }
+            FindPlayer();
 
-        Vector3 toPlayer = player.position - transform.position;
-        Vector3 flatDirection = Vector3.ProjectOnPlane(toPlayer, Vector3.up);
-        float distance = flatDirection.magnitude;
-
-        if (!hasDetectedPlayer && distance <= detectionRange)
-            hasDetectedPlayer = true;
-
+        Vector3 horizontalVelocity = Vector3.zero;
         bool moving = false;
-        bool shooting = false;
-        Vector3 horizontal = Vector3.zero;
 
-        if (hasDetectedPlayer)
+        if (player != null)
         {
-            if (flatDirection.sqrMagnitude > 0.001f)
+            // Measure distance and direction on the ground plane only.
+            Vector3 toPlayer = player.position - transform.position;
+            Vector3 flatToPlayer = Vector3.ProjectOnPlane(toPlayer, Vector3.up);
+            float distance = flatToPlayer.magnitude;
+
+            if (distance <= detectionRange)
+                hasDetectedPlayer = true;
+
+            // The body never pitches or turns. Only the sprite child faces the player,
+            // rotating around world-up so it stays upright.
+            if (spriteRoot != null && flatToPlayer.sqrMagnitude > 0.0001f)
             {
-                Quaternion desired = Quaternion.LookRotation(flatDirection.normalized, Vector3.up);
-                transform.rotation = Quaternion.Euler(0f, desired.eulerAngles.y, 0f);
-                if (spriteRoot != null)
-                    spriteRoot.localRotation = Quaternion.Euler(0f, spriteYawOffset, 0f);
+                Quaternion facing = Quaternion.LookRotation(flatToPlayer.normalized, Vector3.up);
+                spriteRoot.rotation = Quaternion.Euler(0f, facing.eulerAngles.y + spriteYawOffset, 0f);
             }
 
-            if (distance > stopDistance && flatDirection.sqrMagnitude > 0.001f)
+            if (hasDetectedPlayer && distance > stopDistance && flatToPlayer.sqrMagnitude > 0.0001f)
             {
-                horizontal = flatDirection.normalized * moveSpeed;
+                horizontalVelocity = flatToPlayer.normalized * moveSpeed;
                 moving = true;
             }
 
-            if (distance <= weaponRange && Time.time >= nextShotTime && HasLineOfSight())
+            if (hasDetectedPlayer &&
+                distance <= weaponRange &&
+                Time.time >= nextShotTime &&
+                HasLineOfSight())
             {
                 nextShotTime = Time.time + 1f / Mathf.Max(0.05f, shotsPerSecond);
-                if (playerHealth == null) playerHealth = player.GetComponentInParent<Health>();
-                if (playerHealth != null) playerHealth.TakeDamage(damage);
-                shooting = true;
-                if (spriteAnimation != null) spriteAnimation.PlayShoot();
+
+                if (playerHealth == null)
+                    playerHealth = player.GetComponentInParent<Health>();
+
+                if (playerHealth != null)
+                    playerHealth.TakeDamage(damage);
+
+                if (spriteAnimation != null)
+                    spriteAnimation.PlayShoot();
             }
         }
 
-        ApplyGravity(horizontal);
-        if (!shooting) UpdateAnimation(moving, hasDetectedPlayer);
+        ApplyGravity(horizontalVelocity);
+        UpdateAnimation(moving);
     }
 
     private void ApplyGravity(Vector3 horizontalVelocity)
@@ -94,39 +107,48 @@ public class EnemyAI : MonoBehaviour
         else
             verticalVelocity -= gravity * Time.deltaTime;
 
-        Vector3 velocity = horizontalVelocity + Vector3.up * verticalVelocity;
-        controller.Move(velocity * Time.deltaTime);
+        controller.Move((horizontalVelocity + Vector3.up * verticalVelocity) * Time.deltaTime);
     }
 
     private void FindPlayer()
     {
         GameObject found = GameObject.FindGameObjectWithTag("Player");
-        if (found != null)
-        {
-            player = found.transform;
-            playerHealth = player.GetComponentInParent<Health>();
-        }
+        if (found == null)
+            return;
+
+        player = found.transform;
+        playerHealth = player.GetComponentInParent<Health>();
     }
 
     private bool HasLineOfSight()
     {
-        Vector3 origin = eyePoint != null ? eyePoint.position : transform.position + Vector3.up * 1.5f;
+        Vector3 origin = eyePoint != null
+            ? eyePoint.position
+            : transform.position + Vector3.up * 1.5f;
+
         Vector3 destination = player.position + Vector3.up;
         Vector3 direction = destination - origin;
         float distance = direction.magnitude;
-        if (distance <= 0.001f) return true;
+
+        if (distance <= 0.001f)
+            return true;
 
         if (!Physics.Raycast(origin, direction.normalized, out RaycastHit hit,
-            Mathf.Min(weaponRange, distance + 0.1f), lineOfSightMask, QueryTriggerInteraction.Ignore))
+                Mathf.Min(weaponRange, distance + 0.1f), lineOfSightMask,
+                QueryTriggerInteraction.Ignore))
             return true;
 
         return hit.transform == player || hit.transform.IsChildOf(player);
     }
 
-    private void UpdateAnimation(bool moving, bool detected)
+    private void UpdateAnimation(bool moving)
     {
-        if (spriteAnimation == null) return;
-        if (moving) spriteAnimation.PlayWalk();
-        else spriteAnimation.PlayIdle();
+        if (spriteAnimation == null)
+            return;
+
+        if (moving)
+            spriteAnimation.PlayWalk();
+        else
+            spriteAnimation.PlayIdle();
     }
 }
