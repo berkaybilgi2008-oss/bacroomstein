@@ -2,12 +2,12 @@ using UnityEngine;
 
 public class WeaponHolder : MonoBehaviour
 {
-    [Header("Shared weapon position")]
-    [Tooltip("Create an empty child of the FPS camera named WeaponHolder and assign it here.")]
+    [Header("Weapon position")]
+    [Tooltip("Leave empty to use this WeaponHolder object's Transform.")]
     [SerializeField] private Transform weaponSocket;
 
     [Header("Weapon visuals (element 0 is the ground cola weapon)")]
-    [Tooltip("Assign your prepared weapon visual objects here. Keep them as children of WeaponHolder for easy positioning.")]
+    [Tooltip("Add every held weapon object here. All are hidden until picked up.")]
     [SerializeField] private GameObject[] weaponVisuals;
 
     [Header("Basic firing")]
@@ -23,19 +23,22 @@ public class WeaponHolder : MonoBehaviour
     private void Awake()
     {
         if (playerCamera == null)
+            playerCamera = GetComponentInParent<Camera>();
+        if (playerCamera == null)
             playerCamera = GetComponentInChildren<Camera>();
         if (playerCamera == null)
             playerCamera = Camera.main;
 
-        if (weaponSocket == null && playerCamera != null)
-            weaponSocket = playerCamera.transform;
+        // Keep weapons attached to the holder, not directly to the camera.
+        if (weaponSocket == null)
+            weaponSocket = transform;
 
-        // Empty hands until a pickup is collected.
+        // Empty hands at game start. Make sure every listed visual is disabled.
         if (weaponVisuals == null) return;
         foreach (GameObject visual in weaponVisuals)
         {
             if (visual == null) continue;
-            if (weaponSocket != null && visual.transform.parent != weaponSocket)
+            if (visual.transform.parent != weaponSocket)
                 visual.transform.SetParent(weaponSocket, false);
             visual.SetActive(false);
         }
@@ -45,7 +48,7 @@ public class WeaponHolder : MonoBehaviour
     {
         if (weaponVisuals == null || index < 0 || index >= weaponVisuals.Length || weaponVisuals[index] == null)
         {
-            Debug.LogWarning("WeaponHolder: Assign a weapon visual in the Weapon Visuals list; index " + index + " is missing.");
+            Debug.LogWarning("WeaponHolder: Add the weapon visual to the Weapon Visuals list; index " + index + " is missing.");
             return;
         }
 
