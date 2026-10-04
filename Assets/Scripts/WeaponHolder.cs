@@ -57,8 +57,12 @@ public class WeaponHolder : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1)) EquipWeapon(0);
-        if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2)) EquipWeapon(1);
+        // 1 = upright Cola (Element 1), 2 = normal Cola (Element 0).
+        // Also support the numeric keypad.
+        if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
+            EquipWeapon(1);
+        else if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
+            EquipWeapon(0);
 
         if (equippedIndex < 0 || playerCamera == null || !Input.GetMouseButtonDown(0) || Time.time < nextFireTime) return;
         nextFireTime = Time.time + fireRate;
