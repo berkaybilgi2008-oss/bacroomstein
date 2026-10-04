@@ -5,7 +5,6 @@ using UnityEngine;
 public class ColaPickup : MonoBehaviour
 {
     [SerializeField, Min(0)] private int weaponIndex = 0;
-
     private Transform playerCamera;
     private bool collected;
 
@@ -20,9 +19,7 @@ public class ColaPickup : MonoBehaviour
     private void LateUpdate()
     {
         if (collected) return;
-        if (playerCamera == null && Camera.main != null)
-            playerCamera = Camera.main.transform;
-
+        if (playerCamera == null && Camera.main != null) playerCamera = Camera.main.transform;
         if (playerCamera != null)
         {
             Vector3 lookDirection = playerCamera.forward;
@@ -36,16 +33,20 @@ public class ColaPickup : MonoBehaviour
         if (collected) return;
         Transform playerRoot = other.transform.root;
         if (!other.CompareTag("Player") && !playerRoot.CompareTag("Player")) return;
-
         WeaponHolder holder = FindFirstObjectByType<WeaponHolder>();
         if (holder == null)
         {
             Debug.LogWarning("ColaPickup: No WeaponHolder found in the scene.");
             return;
         }
-
         collected = true;
         holder.AddWeapon(weaponIndex);
+        if (weaponIndex == 0)
+        {
+            holder.AddWeapon(1);
+            holder.EquipWeapon(0);
+        }
+        else holder.EquipWeapon(weaponIndex);
         Destroy(gameObject);
     }
 }
