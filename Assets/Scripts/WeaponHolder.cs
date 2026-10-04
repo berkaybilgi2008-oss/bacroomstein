@@ -75,7 +75,26 @@ public class WeaponHolder : MonoBehaviour
         }
 
         Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
-        if (Physics.Raycast(ray, out RaycastHit hit, range, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+
+        if (equippedIndex == 1)
+        {
+            // Upright Cola is a short-range swing: affect nearby physics targets only.
+            const float swingReach = 1.6f;
+            const float swingRadius = 0.75f;
+            Vector3 swingCenter = playerCamera.transform.position + playerCamera.transform.forward * swingReach;
+            Collider[] targets = Physics.OverlapSphere(swingCenter, swingRadius, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            foreach (Collider target in targets)
+            {
+                if (target.transform.root == transform.root) continue;
+                Rigidbody targetBody = target.attachedRigidbody;
+                if (targetBody != null && !targetBody.isKinematic)
+                {
+                    Vector3 pushDirection = (targetBody.worldCenterOfMass - playerCamera.transform.position).normalized;
+                    targetBody.AddForce(pushDirection * impactForce, ForceMode.Impulse);
+                }
+            }
+        }
+        else if (Physics.Raycast(ray, out RaycastHit hit, range, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
         {
             Rigidbody hitBody = hit.rigidbody;
             if (hitBody != null && !hitBody.isKinematic)
