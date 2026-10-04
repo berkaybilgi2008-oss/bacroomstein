@@ -66,11 +66,15 @@ public class ColaGun : MonoBehaviour
         Renderer renderer = gunVisual.GetComponent<Renderer>();
         if (renderer != null)
         {
-            Material material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            if (material.shader == null)
-                material.shader = Shader.Find("Standard");
-            material.color = new Color(0.72f, 0.08f, 0.08f);
-            renderer.material = material;
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null)
+                shader = Shader.Find("Standard");
+            if (shader != null)
+            {
+                Material material = new Material(shader);
+                material.color = new Color(0.72f, 0.08f, 0.08f);
+                renderer.material = material;
+            }
         }
 
         GameObject top = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
