@@ -2144,7 +2144,7 @@ Transform:
   m_GameObject: {fileID: 722529106}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 443.3, y: 0, z: 0}
+  m_LocalPosition: {x: 84.2, y: 0, z: 0}
   m_LocalScale: {x: 40.914, y: 1, z: 23.821}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5754,7 +5754,7 @@ Transform:
   m_GameObject: {fileID: 2100000000}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -10}
+  m_LocalPosition: {x: 37.38, y: 0, z: -50.88}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -5786,9 +5786,6 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0
   m_Center: {x: 0, y: 1, z: 0}
-  m_EnableOverlapRecovery: 1
-  m_EnableSlopeLimit: 1
-  m_EnableStepOffset: 1
 --- !u!114 &2100000003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5817,25 +5814,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b7f1c7a45e2040f4a6d8b19c3e7f205a, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  playerCamera: {fileID: 961739753}
-  meleeRange: 2.1
-  meleeDamage: 35
-  meleeCooldown: 0.48
-  sodaRange: 9
-  sodaDamage: 22
-  sodaCooldown: 0.7
-  switchDuration: 0.32
---- !u!1660057539 &9223372036854775807
-SceneRoots:
-  m_ObjectHideFlags: 0
-  m_Roots:
-  - {fileID: 2100000001}
-  - {fileID: 203844589}
-  - {fileID: 520051953}
-  - {fileID: 2200000002}
-
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2200000001
 GameObject:
   m_ObjectHideFlags: 0
@@ -5865,14 +5845,15 @@ Transform:
   m_GameObject: {fileID: 2200000001}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1, y: 0.1, z: -8.5}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 40.51, y: 0.297, z: -26.6}
+  m_LocalScale: {x: 0.023517095, y: 0.023517095, z: 0.023517095}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &2200000003
 SpriteRenderer:
+  serializedVersion: 3
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -5888,6 +5869,11 @@ SpriteRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 0
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -5901,19 +5887,30 @@ SpriteRenderer:
   m_ScaleInLightmap: 1
   m_ReceiveGI: 0
   m_PreserveUVs: 0
-  m_IgnoreNormals: 0
+  m_IgnoreNormalsForChartDetection: 0
   m_ImportantGI: 0
-  m_Sprite: {fileID: 0}
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 21300000, guid: d983481404b077747bc75c34769cd0d4, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 24.802656, y: 35.079998}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 0
-  m_MaskInteraction: 0
+  m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!65 &2200000004
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -5928,13 +5925,13 @@ BoxCollider:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
+  m_LayerOverridePriority: 0
   m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
-
+  m_Size: {x: 11.713151, y: 27.189285, z: 0.7450284}
+  m_Center: {x: 1.882604, y: 1.6002783, z: 0.103570834}
 --- !u!54 &2200000005
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -5961,6 +5958,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 1
   m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!114 &2200000006
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5971,5 +5969,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a83f2b6d9c114f0aa72e61c3b4d58f90, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1660057539 &9223372036854775807
+SceneRoots:
+  m_ObjectHideFlags: 0
+  m_Roots:
+  - {fileID: 2100000001}
+  - {fileID: 203844589}
+  - {fileID: 520051953}
+  - {fileID: 2200000002}
