@@ -3,11 +3,9 @@ using UnityEngine;
 public class WeaponHolder : MonoBehaviour
 {
     [Header("Weapon position")]
-    [Tooltip("Leave empty to use this WeaponHolder object's Transform.")]
     [SerializeField] private Transform weaponSocket;
 
-    [Header("Weapon visuals (element 0 is the ground cola weapon)")]
-    [Tooltip("Add each held weapon object here. Element 0 must be ColaWeapon.")]
+    [Header("Weapon visuals (index 0 = Cola)")]
     [SerializeField] private GameObject[] weaponVisuals;
 
     [Header("Basic firing")]
@@ -16,27 +14,20 @@ public class WeaponHolder : MonoBehaviour
     [SerializeField] private float range = 60f;
     [SerializeField] private float impactForce = 8f;
 
+    private bool[] ownedWeapons;
     private int equippedIndex = -1;
     private float nextFireTime;
     private GUIStyle crosshairStyle;
 
     private void Awake()
     {
-        if (playerCamera == null)
-            playerCamera = GetComponentInParent<Camera>();
-        if (playerCamera == null)
-            playerCamera = GetComponentInChildren<Camera>();
-        if (playerCamera == null)
-            playerCamera = Camera.main;
+        if (playerCamera == null) playerCamera = GetComponentInParent<Camera>();
+        if (playerCamera == null) playerCamera = GetComponentInChildren<Camera>();
+        if (playerCamera == null) playerCamera = Camera.main;
+        if (weaponSocket == null) weaponSocket = transform;
 
-        if (weaponSocket == null)
-            weaponSocket = transform;
+        ownedWeapons = new bool[weaponVisuals == null ? 0 : weaponVisuals.Length];
 
-        // First hide every visual under the holder, even if the Inspector array was forgotten.
-        for (int i = 0; i < weaponSocket.childCount; i++)
-            weaponSocket.GetChild(i).gameObject.SetActive(false);
-
-        // Ensure listed visuals are parented to the holder and remain hidden at game start.
         if (weaponVisuals == null) return;
         foreach (GameObject visual in weaponVisuals)
         {
@@ -47,19 +38,30 @@ public class WeaponHolder : MonoBehaviour
         }
     }
 
-    public void EquipWeapon(int index)
+    // Called by a pickup: record ownership, then equip the collected weapon.
+    public void AddWeapon(int index)
     {
         if (weaponVisuals == null || index < 0 || index >= weaponVisuals.Length || weaponVisuals[index] == null)
         {
-            Debug.LogWarning("WeaponHolder: Add ColaWeapon to Weapon Visuals element 0 in the Inspector.");
+            Debug.LogWarning("WeaponHolder: Weapon Visuals list is missing the visual for index " + index + ".");
+            return;
+        }
+
+        ownedWeapons[index] = true;
+        EquipWeapon(index);
+    }
+
+    public void EquipWeapon(int index)
+    {
+        if (ownedWeapons == null || index < 0 || index >= ownedWeapons.Length ||
+            !ownedWeapons[index] || weaponVisuals[index] == null)
+        {
+            Debug.LogWarning("WeaponHolder: You must collect this weapon before equipping it.");
             return;
         }
 
         for (int i = 0; i < weaponVisuals.Length; i++)
-        {
-            if (weaponVisuals[i] != null)
-                weaponVisuals[i].SetActive(i == index);
-        }
+            if (weaponVisuals[i] != null) weaponVisuals[i].SetActive(i == index);
 
         equippedIndex = index;
     }
