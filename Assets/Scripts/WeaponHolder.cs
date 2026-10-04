@@ -66,6 +66,14 @@ public class WeaponHolder : MonoBehaviour
 
         if (equippedIndex < 0 || playerCamera == null || !FirePressed() || Time.time < nextFireTime) return;
         nextFireTime = Time.time + fireRate;
+
+        // Play the equipped weapon's own sprite animation once per shot.
+        if (equippedIndex >= 0 && weaponVisuals != null && equippedIndex < weaponVisuals.Length && weaponVisuals[equippedIndex] != null)
+        {
+            ColaWeaponAnimation weaponAnimation = weaponVisuals[equippedIndex].GetComponentInChildren<ColaWeaponAnimation>();
+            if (weaponAnimation != null) weaponAnimation.PlayFireAnimation();
+        }
+
         Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
         if (Physics.Raycast(ray, out RaycastHit hit, range, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
         {
