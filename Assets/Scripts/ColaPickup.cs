@@ -41,15 +41,15 @@ public class ColaPickup : MonoBehaviour
         if (!other.CompareTag("Player") && !playerRoot.CompareTag("Player"))
             return;
 
-        ColaGun colaGun = FindFirstObjectByType<ColaGun>();
-        if (colaGun == null)
+        WeaponHolder weaponHolder = FindFirstObjectByType<WeaponHolder>();
+        if (weaponHolder == null)
         {
-            Debug.LogWarning("ColaPickup: Add ColaGun to the Player before collecting the cola.");
+            Debug.LogWarning("ColaPickup: Add WeaponHolder to the Player or FPS camera before collecting the cola.");
             return;
         }
 
         collected = true;
-        colaGun.UnlockWeapon();
+        weaponHolder.EquipWeapon(0);
         Destroy(gameObject);
     }
 }
