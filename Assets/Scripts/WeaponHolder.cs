@@ -7,7 +7,7 @@ public class WeaponHolder : MonoBehaviour
     [SerializeField] private Transform weaponSocket;
 
     [Header("Weapon visuals (element 0 is the ground cola weapon)")]
-    [Tooltip("Add every held weapon object here. All are hidden until picked up.")]
+    [Tooltip("Add each held weapon object here. Element 0 must be ColaWeapon.")]
     [SerializeField] private GameObject[] weaponVisuals;
 
     [Header("Basic firing")]
@@ -29,11 +29,14 @@ public class WeaponHolder : MonoBehaviour
         if (playerCamera == null)
             playerCamera = Camera.main;
 
-        // Keep weapons attached to the holder, not directly to the camera.
         if (weaponSocket == null)
             weaponSocket = transform;
 
-        // Empty hands at game start. Make sure every listed visual is disabled.
+        // First hide every visual under the holder, even if the Inspector array was forgotten.
+        for (int i = 0; i < weaponSocket.childCount; i++)
+            weaponSocket.GetChild(i).gameObject.SetActive(false);
+
+        // Ensure listed visuals are parented to the holder and remain hidden at game start.
         if (weaponVisuals == null) return;
         foreach (GameObject visual in weaponVisuals)
         {
@@ -48,7 +51,7 @@ public class WeaponHolder : MonoBehaviour
     {
         if (weaponVisuals == null || index < 0 || index >= weaponVisuals.Length || weaponVisuals[index] == null)
         {
-            Debug.LogWarning("WeaponHolder: Add the weapon visual to the Weapon Visuals list; index " + index + " is missing.");
+            Debug.LogWarning("WeaponHolder: Add ColaWeapon to Weapon Visuals element 0 in the Inspector.");
             return;
         }
 
