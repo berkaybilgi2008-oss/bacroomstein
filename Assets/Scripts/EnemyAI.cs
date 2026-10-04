@@ -8,9 +8,9 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private Transform eyePoint;
 
     [Header("2.5D Visual")]
-    [Tooltip("The child object containing the SpriteRenderer / EnemySpriteAnimation.")]
+    [Tooltip("Child object containing the SpriteRenderer / EnemySpriteAnimation.")]
     [SerializeField] private Transform spriteRoot;
-    [Tooltip("Use 0 if the sprite's front faces local +Z. Adjust only if the art faces another direction.")]
+    [Tooltip("Yaw correction if the sprite art's front is not local +Z.")]
     [SerializeField] private float spriteYawOffset = 0f;
 
     [Header("Detection and movement")]
@@ -56,7 +56,6 @@ public class EnemyAI : MonoBehaviour
 
         if (player != null)
         {
-            // Measure distance and direction on the ground plane only.
             Vector3 toPlayer = player.position - transform.position;
             Vector3 flatToPlayer = Vector3.ProjectOnPlane(toPlayer, Vector3.up);
             float distance = flatToPlayer.magnitude;
@@ -64,12 +63,15 @@ public class EnemyAI : MonoBehaviour
             if (distance <= detectionRange)
                 hasDetectedPlayer = true;
 
-            // The body never pitches or turns. Only the sprite child faces the player,
-            // rotating around world-up so it stays upright.
-            if (spriteRoot != null && flatToPlayer.sqrMagnitude > 0.0001f)
+            if (hasDetectedPlayer && flatToPlayer.sqrMagnitude > 0.0001f)
             {
+                // Rotate the complete enemy body around Y only: never pitch or roll.
                 Quaternion facing = Quaternion.LookRotation(flatToPlayer.normalized, Vector3.up);
-                spriteRoot.rotation = Quaternion.Euler(0f, facing.eulerAngles.y + spriteYawOffset, 0f);
+                transform.rotation = Quaternion.Euler(0f, facing.eulerAngles.y, 0f);
+
+                // Keep the sprite upright and apply only its art-facing correction.
+                if (spriteRoot != null)
+                    spriteRoot.localRotation = Quaternion.Euler(0f, spriteYawOffset, 0f);
             }
 
             if (hasDetectedPlayer && distance > stopDistance && flatToPlayer.sqrMagnitude > 0.0001f)
@@ -122,10 +124,7 @@ public class EnemyAI : MonoBehaviour
 
     private bool HasLineOfSight()
     {
-        Vector3 origin = eyePoint != null
-            ? eyePoint.position
-            : transform.position + Vector3.up * 1.5f;
-
+        Vector3 origin = eyePoint != null ? eyePoint.position : transform.position + Vector3.up * 1.5f;
         Vector3 destination = player.position + Vector3.up;
         Vector3 direction = destination - origin;
         float distance = direction.magnitude;
