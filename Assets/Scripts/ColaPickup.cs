@@ -4,6 +4,8 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class ColaPickup : MonoBehaviour
 {
+    [SerializeField, Min(0)] private int weaponIndex = 0;
+
     private Transform playerCamera;
     private bool collected;
 
@@ -18,12 +20,8 @@ public class ColaPickup : MonoBehaviour
     private void LateUpdate()
     {
         if (collected) return;
-
-        if (playerCamera == null)
-        {
-            Camera mainCamera = Camera.main;
-            if (mainCamera != null) playerCamera = mainCamera.transform;
-        }
+        if (playerCamera == null && Camera.main != null)
+            playerCamera = Camera.main.transform;
 
         if (playerCamera != null)
         {
@@ -36,20 +34,18 @@ public class ColaPickup : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         if (collected) return;
-
         Transform playerRoot = other.transform.root;
-        if (!other.CompareTag("Player") && !playerRoot.CompareTag("Player"))
-            return;
+        if (!other.CompareTag("Player") && !playerRoot.CompareTag("Player")) return;
 
-        WeaponHolder weaponHolder = FindFirstObjectByType<WeaponHolder>();
-        if (weaponHolder == null)
+        WeaponHolder holder = FindFirstObjectByType<WeaponHolder>();
+        if (holder == null)
         {
-            Debug.LogWarning("ColaPickup: Add WeaponHolder to the Player or FPS camera before collecting the cola.");
+            Debug.LogWarning("ColaPickup: No WeaponHolder found in the scene.");
             return;
         }
 
         collected = true;
-        weaponHolder.EquipWeapon(0);
+        holder.AddWeapon(weaponIndex);
         Destroy(gameObject);
     }
 }
