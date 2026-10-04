@@ -1,4 +1,7 @@
 using UnityEngine;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 public class WeaponHolder : MonoBehaviour
 {
@@ -58,13 +61,10 @@ public class WeaponHolder : MonoBehaviour
     private void Update()
     {
         // 1 = upright Cola (Element 1), 2 = normal Cola (Element 0).
-        // Also support the numeric keypad.
-        if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
-            EquipWeapon(1);
-        else if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
-            EquipWeapon(0);
+        if (WeaponKeyPressed(1)) EquipWeapon(1);
+        else if (WeaponKeyPressed(2)) EquipWeapon(0);
 
-        if (equippedIndex < 0 || playerCamera == null || !Input.GetMouseButtonDown(0) || Time.time < nextFireTime) return;
+        if (equippedIndex < 0 || playerCamera == null || !FirePressed() || Time.time < nextFireTime) return;
         nextFireTime = Time.time + fireRate;
         Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
         if (Physics.Raycast(ray, out RaycastHit hit, range, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
@@ -73,6 +73,38 @@ public class WeaponHolder : MonoBehaviour
             if (hitBody != null && !hitBody.isKinematic)
                 hitBody.AddForceAtPosition(ray.direction * impactForce, hit.point, ForceMode.Impulse);
         }
+    }
+
+    private bool WeaponKeyPressed(int number)
+    {
+        bool pressed = false;
+#if ENABLE_LEGACY_INPUT_MANAGER
+        pressed = number == 1
+            ? Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1)
+            : Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2);
+#endif
+#if ENABLE_INPUT_SYSTEM
+        if (Keyboard.current != null)
+        {
+            if (number == 1)
+                pressed |= Keyboard.current.digit1Key.wasPressedThisFrame || Keyboard.current.numpad1Key.wasPressedThisFrame;
+            else
+                pressed |= Keyboard.current.digit2Key.wasPressedThisFrame || Keyboard.current.numpad2Key.wasPressedThisFrame;
+        }
+#endif
+        return pressed;
+    }
+
+    private bool FirePressed()
+    {
+        bool pressed = false;
+#if ENABLE_LEGACY_INPUT_MANAGER
+        pressed = Input.GetMouseButtonDown(0);
+#endif
+#if ENABLE_INPUT_SYSTEM
+        if (Mouse.current != null) pressed |= Mouse.current.leftButton.wasPressedThisFrame;
+#endif
+        return pressed;
     }
 
     private void OnGUI()
